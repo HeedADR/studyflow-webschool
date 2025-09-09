@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>StudyFlow - Administração</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+      /* Estilos específicos do painel administrativo */
+      .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--space-6);
+      }
+
+      .admin-panel {
+        background: var(--glass-bg);
+        padding: var(--space-8);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        backdrop-filter: var(--glass-blur);
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-8);
+        padding-bottom: var(--space-4);
+        border-bottom: 2px solid var(--border-light);
+      }
+
+      .panel-header h2 {
+        color: var(--primary-color);
+        font-weight: 600;
+        font-size: 1.5rem;
+      }
+
+      .users-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: var(--space-6);
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .users-table th,
+      .users-table td {
+        padding: var(--space-4);
+        text-align: left;
+        border-bottom: 1px solid var(--border-light);
+      }
+
+      .users-table th {
+        background: var(--surface-secondary);
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 14px;
+      }
+
+      .users-table tr:hover {
+        background: var(--hover-bg);
+      }
+
+      .role-badge {
+        padding: 4px 12px;
+        border-radius: var(--radius-full);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .role-admin {
+        background: var(--danger-color);
+        color: white;
+      }
+
+      .role-user {
+        background: var(--primary-color);
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="admin-container">
+      <div class="header">
+        <h1><i class="fas fa-users-cog"></i> Administração de Usuários</h1>
+        <div class="user-info">
+          <span id="adminName">Carregando...</span>
+          <button onclick="logout()" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i> Sair
+          </button>
+        </div>
+      </div>
+
+      <div class="admin-panel">
+        <div class="panel-header">
+          <h2><i class="fas fa-users"></i> Gerenciar Usuários</h2>
+          <button onclick="openCreateModal()" class="btn primary">
+            <i class="fas fa-plus"></i> Novo Usuário
+          </button>
+        </div>
+
+        <div class="toast error" id="errorMessage" style="display: none;"></div>
+        <div class="toast success" id="successMessage" style="display: none;"></div>
+        <div class="loading-spinner" id="loading" style="display: none;">
+          <i class="fas fa-spinner fa-spin"></i> Carregando...
+        </div>
+
+        <table class="users-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome de Usuário</th>
+              <th>Nome Completo</th>
+              <th>Função</th>
+              <th>Data de Criação</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+            <!-- Usuários serão carregados aqui -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal para Criar/Editar Usuário -->
+    <div id="userModal" class="modal hidden">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h3 id="modalTitle">Novo Usuário</h3>
+        <form id="userForm">
+          <div class="form-group">
+            <label for="username">Nome de Usuário:</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+          <div class="form-group">
+            <label for="fullName">Nome Completo:</label>
+            <input type="text" id="fullName" name="fullName" required />
+          </div>
+          <div class="form-group">
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" />
+            <small id="passwordHelp" style="color: #666"
+              >Deixe em branco para manter a senha atual (apenas na
+              edição)</small
+            >
+          </div>
+          <div class="form-group">
+            <label for="role">Função:</label>
+            <select id="role" name="role" required>
+              <option value="user">Usuário</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
+          <div class="actions">
+            <button type="submit" class="btn success">
+              <i class="fas fa-save"></i> Salvar
+            </button>
+            <button
+              type="button"
+              onclick="closeModal()"
+              class="btn secondary"
+            >
+              <i class="fas fa-times"></i> Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      let currentUserId = null;
+      let isEditMode = false;
+
+      // Verificar se o usuário está logado e é admin
+      async function checkAuth() {
+        try {
+          const response = await fetch("/api/current-user");
+          if (!response.ok) {
+            window.location.href = "login.html";
+            return;
+          }
+
+          const data = await response.json();
+          if (!data.user || data.user.role !== "admin") {
+            alert(
+              "Acesso negado. Apenas administradores podem acessar esta página."
+            );
+            window.location.href = "index.html";
+            return;
+          }
+
+          document.getElementById("adminName").textContent =
+            data.user.full_name;
+          loadUsers();
+        } catch (error) {
+          console.error("Erro ao verificar autenticação:", error);
+          window.location.href = "login.html";
+        }
+      }
+
+      // Carregar lista de usuários
+      async function loadUsers() {
+        try {
+          showLoading(true);
+          const response = await fetch("/api/admin/users");
+
+          if (!response.ok) {
+            throw new Error("Erro ao carregar usuários");
+          }
+
+          const users = await response.json();
+          displayUsers(users);
+        } catch (error) {
+          showError("Erro ao carregar usuários: " + error.message);
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      // Exibir usuários na tabela
+      function displayUsers(users) {
+        const tbody = document.getElementById("usersTableBody");
+        tbody.innerHTML = "";
+
+        users.forEach((user) => {
+          const row = document.createElement("tr");
+          const createdAt = new Date(user.created_at).toLocaleDateString(
+            "pt-BR"
+          );
+
+          row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>${user.username}</td>
+                    <td>${user.full_name}</td>
+                    <td><span class="role-badge role-${user.role}">${
+            user.role === "admin" ? "Admin" : "Usuário"
+          }</span></td>
+                    <td>${createdAt}</td>
+                    <td class="actions">
+                        <button onclick="editUser(${
+                          user.id
+                        })" class="btn btn-primary" style="padding: 5px 10px; font-size: 12px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteUser(${user.id}, '${
+            user.username
+          }')" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+
+          tbody.appendChild(row);
+        });
+      }
+
+      // Abrir modal para criar usuário
+      function openCreateModal() {
+        isEditMode = false;
+        currentUserId = null;
+        document.getElementById("modalTitle").textContent = "Novo Usuário";
+        document.getElementById("userForm").reset();
+        document.getElementById("password").required = true;
+        document.getElementById("passwordHelp").style.display = "none";
+        document.getElementById("userModal").classList.remove("hidden");
+      }
+
+      // Editar usuário
+      async function editUser(userId) {
+        try {
+          const response = await fetch("/api/admin/users");
+          const users = await response.json();
+          const user = users.find((u) => u.id === userId);
+
+          if (!user) {
+            showError("Usuário não encontrado");
+            return;
+          }
+
+          isEditMode = true;
+          currentUserId = userId;
+          document.getElementById("modalTitle").textContent = "Editar Usuário";
+          document.getElementById("username").value = user.username;
+          document.getElementById("fullName").value = user.full_name;
+          document.getElementById("role").value = user.role;
+          document.getElementById("password").value = "";
+          document.getElementById("password").required = false;
+          document.getElementById("passwordHelp").style.display = "block";
+          document.getElementById("userModal").classList.remove("hidden");
+        } catch (error) {
+          showError("Erro ao carregar dados do usuário");
+        }
+      }
+
+      // Excluir usuário
+      async function deleteUser(userId, username) {
+        if (
+          !confirm(
+            `Tem certeza que deseja excluir o usuário "${username}"?\n\nEsta ação não pode ser desfeita e todos os dados do usuário serão perdidos.`
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`/api/admin/users/${userId}`, {
+            method: "DELETE",
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || "Erro ao excluir usuário");
+          }
+
+          showSuccess("Usuário excluído com sucesso!");
+          loadUsers();
+        } catch (error) {
+          showError("Erro ao excluir usuário: " + error.message);
+        }
+      }
+
+      // Fechar modal
+      function closeModal() {
+        document.getElementById("userModal").classList.add("hidden");
+      }
+
+      // Submeter formulário
+      document
+        .getElementById("userForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const formData = new FormData(e.target);
+          const userData = {
+            username: formData.get("username"),
+            full_name: formData.get("fullName"),
+            role: formData.get("role"),
+          };
+
+          const password = formData.get("password");
+          if (password) {
+            userData.password = password;
+          }
+
+          try {
+            let response;
+            if (isEditMode) {
+              response = await fetch(`/api/admin/users/${currentUserId}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(userData),
+              });
+            } else {
+              if (!password) {
+                showError("Senha é obrigatória para novos usuários");
+                return;
+              }
+              response = await fetch("/api/admin/users", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(userData),
+              });
+            }
+
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.error || "Erro ao salvar usuário");
+            }
+
+            const result = await response.json();
+            showSuccess(result.message);
+            closeModal();
+            loadUsers();
+          } catch (error) {
+            showError("Erro ao salvar usuário: " + error.message);
+          }
+        });
+
+      // Logout
+      async function logout() {
+        try {
+          await fetch("/api/logout", { method: "POST" });
+          window.location.href = "index.html";
+        } catch (error) {
+          console.error("Erro ao fazer logout:", error);
+          window.location.href = "index.html";
+        }
+      }
+
+      // Funções de utilidade
+      function showLoading(show) {
+        document.getElementById("loading").style.display = show
+          ? "block"
+          : "none";
+        document.getElementById("usersTable").style.display = show
+          ? "none"
+          : "table";
+      }
+
+      function showError(message) {
+        const errorDiv = document.getElementById("errorMessage");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => {
+          errorDiv.style.display = "none";
+        }, 5000);
+      }
+
+      function showSuccess(message) {
+        const successDiv = document.getElementById("successMessage");
+        successDiv.textContent = message;
+        successDiv.style.display = "block";
+        setTimeout(() => {
+          successDiv.style.display = "none";
+        }, 3000);
+      }
+
+      // Fechar modal ao clicar fora
+      window.onclick = function (event) {
+        const modal = document.getElementById("userModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      };
+
+      // Inicializar página
+      checkAuth();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyFlow - Organização de Estudos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <div class="login-header">
+                <i class="fas fa-graduation-cap"></i>
+                <h1>StudyFlow</h1>
+                <p>Organize seus estudos de forma inteligente</p>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Entrar
+                </button>
+                <div id="loginError" class="login-error" style="display: none;"></div>
+            </form>
+            <div class="login-info">
+                <h3>Usuários de teste:</h3>
+                <p><strong>Admin:</strong> admin / admin123</p>
+                <p><strong>Lucas:</strong> lucas.mendes / lucas123</p>
+                <p><strong>Ana:</strong> ana.beatriz / ana123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Application (hidden initially) -->
+    <div id="mainApp" class="main-app" style="display: none;">
+        <!-- Header/Navbar -->
+        <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>StudyFlow</span>
+                </div>
+                <nav class="nav-menu">
+                    <button class="nav-btn active" data-section="dashboard">
+                        <i class="fas fa-chart-pie"></i>
+                        Dashboard
+                    </button>
+                    <button class="nav-btn" data-section="pomodoro">
+                        <i class="fas fa-clock"></i>
+                        Pomodoro
+                    </button>
+                    <button class="nav-btn" data-section="agenda">
+                        <i class="fas fa-calendar"></i>
+                        Agenda
+                    </button>
+                    <button class="nav-btn" data-section="sessions">
+                        <i class="fas fa-history"></i>
+                        Sessões
+                    </button>
+                    <button class="nav-btn" data-section="notes">
+                        <i class="fas fa-sticky-note"></i>
+                        Anotações
+                    </button>
+                    <button class="nav-btn" data-section="reports">
+                        <i class="fas fa-chart-line"></i>
+                        Relatórios
+                    </button>
+                    <button class="nav-btn" data-section="settings">
+                        <i class="fas fa-cog"></i>
+                        Configurações
+                    </button>
+                </nav>
+                <div class="user-info">
+                    <span id="userFullName">Usuário</span>
+                    <button id="adminBtn" class="admin-btn" style="display: none;" onclick="window.location.href='admin.html'">
+                        <i class="fas fa-users-cog"></i>
+                        Admin
+                    </button>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Sair
+                    </button>
+                </div>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <div class="section-header">
+                    <h1>Dashboard</h1>
+                    <p>Visão geral do seu progresso de estudos</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-icon today">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="todayHours">0h 00m</h3>
+                            <p>Horas Hoje</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card stat-card">
+                        <div class="stat-icon week">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="weekHours">0h 00m</h3>
+                            <p>Horas da Semana</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card stat-card">
+                        <div class="stat-icon subjects">
+                            <i class="fas fa-books"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="activeSubjects">0</h3>
+                            <p>Disciplinas Ativas</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card stat-card">
+                        <div class="stat-icon streak">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="studyStreak">0</h3>
+                            <p>Dias Consecutivos</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-content">
+                    <div class="card chart-card">
+                        <div class="card__header">
+                            <h3>Progresso Semanal</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="weeklyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card quick-pomodoro">
+                        <div class="card__header">
+                            <h3>Timer Rápido</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="quick-timer">
+                                <div class="timer-display">25:00</div>
+                                <select id="quickSubject" class="form-control">
+                                    <option value="">Selecione uma disciplina</option>
+                                </select>
+                                <div class="timer-controls">
+                                    <button class="btn btn--primary" id="quickStart">
+                                        <i class="fas fa-play"></i>
+                                        Iniciar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Pomodoro Section -->
+            <section id="pomodoro" class="section">
+                <div class="section-header">
+                    <h1>Timer Pomodoro</h1>
+                    <p>Sessões focadas de 25 minutos com pausas de 5 minutos</p>
+                </div>
+                
+                <div class="pomodoro-container">
+                    <div class="card pomodoro-card">
+                        <div class="card__body">
+                            <div class="pomodoro-timer">
+                                <div class="timer-circle">
+                                    <svg class="timer-svg" width="300" height="300">
+                                        <circle cx="150" cy="150" r="120" class="timer-track"></circle>
+                                        <circle cx="150" cy="150" r="120" class="timer-progress" id="timerProgress"></circle>
+                                    </svg>
+                                    <div class="timer-content">
+                                        <div class="timer-time" id="pomodoroTime">25:00</div>
+                                        <div class="timer-mode" id="pomodoroMode">Foco</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="pomodoro-controls">
+                                    <select id="pomodoroSubject" class="form-control">
+                                        <option value="">Selecione uma disciplina</option>
+                                    </select>
+                                    
+                                    <div class="control-buttons">
+                                        <button class="btn btn--primary" id="pomodoroPlay">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        <button class="btn btn--secondary" id="pomodoroPause" style="display: none;">
+                                            <i class="fas fa-pause"></i>
+                                        </button>
+                                        <button class="btn btn--outline" id="pomodoroReset">
+                                            <i class="fas fa-refresh"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card session-history">
+                        <div class="card__header">
+                            <h3>Sessões Hoje</h3>
+                        </div>
+                        <div class="card__body">
+                            <div id="todaySessions" class="sessions-list">
+                                <p>Nenhuma sessão registrada hoje</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Agenda Section -->
+            <section id="agenda" class="section">
+                <div class="section-header">
+                    <h1>Agenda Semanal</h1>
+                    <p>Planeje suas sessões de estudo</p>
+                    <button class="btn btn--primary" id="addEventBtn">
+                        <i class="fas fa-plus"></i>
+                        Novo Evento
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <div class="card__body">
+                        <div class="agenda-controls">
+                            <button class="btn btn--outline" id="prevWeek">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="weekRange">Esta Semana</h3>
+                            <button class="btn btn--outline" id="nextWeek">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="agenda-grid" id="agendaGrid">
+                            <!-- Agenda will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sessions Section -->
+            <section id="sessions" class="section">
+                <div class="section-header">
+                    <h1>Registro de Sessões</h1>
+                    <p>Adicione e visualize suas sessões de estudo</p>
+                    <button class="btn btn--primary" id="addSessionBtn">
+                        <i class="fas fa-plus"></i>
+                        Nova Sessão
+                    </button>
+                </div>
+                
+                <div class="sessions-content">
+                    <div class="card session-form" id="sessionForm" style="display: none;">
+                        <div class="card__header">
+                            <h3>Registrar Sessão</h3>
+                            <button class="btn btn--outline" id="cancelSession">Cancelar</button>
+                        </div>
+                        <div class="card__body">
+                            <form id="sessionFormEl">
+                                <div class="form-group">
+                                    <label class="form-label">Disciplina</label>
+                                    <select id="sessionSubject" class="form-control" required>
+                                        <option value="">Selecione uma disciplina</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Duração (minutos)</label>
+                                    <input type="number" id="sessionDuration" class="form-control" min="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Data</label>
+                                    <input type="date" id="sessionDate" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Notas (opcional)</label>
+                                    <textarea id="sessionNotes" class="form-control" rows="3"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn--primary">Salvar Sessão</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="card sessions-list-card">
+                        <div class="card__header">
+                            <h3>Sessões Recentes</h3>
+                        </div>
+                        <div class="card__body">
+                            <div id="sessionsList">
+                                <p>Nenhuma sessão registrada</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notes Section -->
+            <section id="notes" class="section">
+                <div class="section-header">
+                    <h1>Anotações</h1>
+                    <p>Organize suas anotações por disciplina</p>
+                    <button class="btn btn--primary" id="addNoteBtn">
+                        <i class="fas fa-plus"></i>
+                        Nova Anotação
+                    </button>
+                </div>
+                
+                <div class="notes-content">
+                    <div class="notes-filters">
+                        <select id="noteSubjectFilter" class="form-control">
+                            <option value="">Todas as disciplinas</option>
+                        </select>
+                        <input type="text" id="noteSearch" class="form-control" placeholder="Buscar anotações...">
+                    </div>
+                    
+                    <div id="notesList" class="notes-list">
+                        <p>Nenhuma anotação encontrada</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="reports" class="section">
+                <div class="section-header">
+                    <h1>Relatórios</h1>
+                    <p>Acompanhe seu progresso e estatísticas</p>
+                </div>
+                
+                <div class="reports-content">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Distribuição por Disciplina</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-container" style="position: relative; height: 400px;">
+                                <canvas id="subjectChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Progresso Mensal</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-container" style="position: relative; height: 400px;">
+                                <canvas id="progressChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="section">
+                <div class="section-header">
+                    <h1>Configurações</h1>
+                    <p>Personalize sua experiência de estudos</p>
+                </div>
+                
+                <div class="settings-content">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Disciplinas</h3>
+                            <button class="btn btn--primary" id="addSubjectBtn">
+                                <i class="fas fa-plus"></i>
+                                Nova Disciplina
+                            </button>
+                        </div>
+                        <div class="card__body">
+                            <div id="subjectsList" class="subjects-list">
+                                <!-- Subjects will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>Configurações do Pomodoro</h3>
+                        </div>
+                        <div class="card__body">
+                            <div class="form-group">
+                                <label class="form-label">Duração do Foco (minutos)</label>
+                                <input type="number" id="focusTime" class="form-control" min="1" max="60" value="25">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Duração da Pausa (minutos)</label>
+                                <input type="number" id="breakTime" class="form-control" min="1" max="30" value="5">
+                            </div>
+                            <button class="btn btn--primary" id="saveSettings">Salvar Configurações</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modals -->
+    <div id="eventModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Novo Evento</h3>
+                <button class="btn btn--outline" id="closeEventModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label class="form-label">Título</label>
+                        <input type="text" id="eventTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Disciplina</label>
+                        <select id="eventSubject" class="form-control" required>
+                            <option value="">Selecione uma disciplina</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Data</label>
+                        <input type="date" id="eventDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Horário</label>
+                        <input type="time" id="eventTime" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duração (minutos)</label>
+                        <input type="number" id="eventDuration" class="form-control" min="15" value="60" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Salvar Evento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="noteModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="noteModalTitle">Nova Anotação</h3>
+                <button class="btn btn--outline" id="closeNoteModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="noteForm">
+                    <div class="form-group">
+                        <label class="form-label">Título</label>
+                        <input type="text" id="noteTitle" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Disciplina</label>
+                        <select id="noteSubject" class="form-control" required>
+                            <option value="">Selecione uma disciplina</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Conteúdo</label>
+                        <textarea id="noteContent" class="form-control" rows="8" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Salvar Anotação</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="subjectModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="subjectModalTitle">Nova Disciplina</h3>
+                <button class="btn btn--outline" id="closeSubjectModal">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="subjectForm">
+                    <div class="form-group">
+                        <label class="form-label">Nome</label>
+                        <input type="text" id="subjectName" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Cor</label>
+                        <input type="color" id="subjectColor" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn--primary">Salvar Disciplina</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+    
+    </div> <!-- End of mainApp -->
+
+    <script src="app.js"></script>
+</body>
+</html>
