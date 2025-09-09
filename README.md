@@ -265,3 +265,22 @@ studyflow/
 3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
 4. Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
+
+
+## 👨‍💻 Integrantes
+
+Thiago dos Santos Andrade
+
+Wesley Gomes Monteiro
+
+Samuel Gustavo Marigheti
+
+Pedro Heryc Monte Araujo
+
+Gustavo Morais da Costa
+
+Lucas More Pereira
+
+João Pedro de Bittencourt Cabral
+
+Rodolfo Schiffler Lourenço
